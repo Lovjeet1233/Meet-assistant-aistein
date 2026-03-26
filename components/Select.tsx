@@ -1,7 +1,6 @@
-import * as SelectPrimitive from "@radix-ui/react-select";
-import { useState } from "react";
-
-import { ChevronDownIcon } from "./Icons";
+import * as SelectPrimitive from '@radix-ui/react-select';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 interface SelectProps<T> {
   options: T[];
@@ -17,33 +16,29 @@ export function Select<T>(props: SelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <SelectPrimitive.Root
-      disabled={props.disabled}
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <SelectPrimitive.Trigger className="w-full text-white text-sm bg-zinc-700 py-2 px-6 rounded-lg cursor-pointer flex items-center justify-between h-fit disabled:opacity-50 min-h-[36px]">
-        <div className={`${props.value ? "text-white" : "text-zinc-400"}`}>
+    <SelectPrimitive.Root disabled={props.disabled} open={isOpen} onOpenChange={setIsOpen}>
+      <SelectPrimitive.Trigger className="flex h-10 min-h-[40px] w-full cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-3 text-left text-sm text-primary outline-none transition-shadow focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 disabled:opacity-50">
+        <div className={props.value ? 'text-primary' : 'text-tertiary'}>
           {props.value ? props.value : props.placeholder}
         </div>
-        <ChevronDownIcon className="w-4 h-4" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-secondary" strokeWidth={1.75} aria-hidden />
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-50 w-[var(--radix-select-trigger-width)] max-h-[300px] overflow-y-auto"
+          className="z-50 w-[var(--radix-select-trigger-width)] max-h-[300px] overflow-y-auto rounded-xl border border-slate-200 bg-primary shadow-lg"
           position="popper"
           sideOffset={5}
         >
-          <SelectPrimitive.Viewport className="rounded-lg border border-zinc-600 bg-zinc-700 shadow-lg py-1">
+          <SelectPrimitive.Viewport className="py-1">
             {props.options.map((option) => {
               const isSelected = props.isSelected(option);
 
               return (
                 <div
-                  key={props.renderOption(option)?.toString()}
-                  className={`py-2 px-4 cursor-pointer hover:bg-zinc-600 outline-none text-sm ${
-                    isSelected ? "text-white bg-zinc-500" : "text-zinc-400"
+                  key={String(props.renderOption(option))}
+                  className={`cursor-pointer px-3 py-2.5 text-sm outline-none transition-colors ${
+                    isSelected ? 'bg-brand-50 text-brand-600' : 'text-secondary hover:bg-slate-50'
                   }`}
                   onClick={() => {
                     props.onSelect(option);

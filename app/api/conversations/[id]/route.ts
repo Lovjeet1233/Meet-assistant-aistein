@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Conversation from '@/lib/db/models/Conversation';
+import '@/lib/db/models/KnowledgeBase';
 import Message from '@/lib/db/models/Message';
 import User from '@/lib/db/models/User';
 import { requireAuth } from '@/lib/auth/middleware';

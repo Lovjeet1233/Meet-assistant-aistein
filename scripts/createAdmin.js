@@ -6,10 +6,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Load environment variables
-require('dotenv').config({ path: '.env.local' });
+// Load .env.local first, then .env (so .env fills in keys when .local is empty)
+require('dotenv').config({ path: ['.env.local', '.env'] });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://LOVJEET:LOVJEETMONGO@cluster0.zpzj90m.mongodb.net/ai_avatar_studio';
+const MONGODB_URI =
+  process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_avatar_studio';
 
 const UserSchema = new mongoose.Schema({
   username: String,
@@ -42,10 +43,10 @@ async function createAdminUser() {
     }
 
     // Create new admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('Lovjeet', 10);
     
     const adminUser = await User.create({
-      username: 'admin',
+      username: 'Lovjeet',
       email: 'admin@aiavatar.com',
       password: hashedPassword,
       role: 'admin',

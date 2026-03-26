@@ -1,0 +1,291 @@
+"use client";
+
+import type { HeyGenAvatarCatalogItem } from "@/lib/avatars/types";
+
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Loader2, Star } from "lucide-react";
+
+import { Input } from "@/components/Input";
+import { PageHeader } from "@/components/ui/PageHeader";
+import {
+  MEETING_AVATAR_PICK_LIMIT,
+  toggleFavoriteAvatar,
+} from "@/lib/avatars/favoritesStorage";
+import { useFavoriteAvatars } from "@/lib/avatars/useFavoriteAvatars";
+
+const PAGE_SIZE = 48;
+
+function AvatarPreviewCard({
+  item,
+  selected,
+  canAdd,
+  onToggle,
+  hoverVideoId,
+  onHoverChange,
+}: {
+  item: HeyGenAvatarCatalogItem;
+  selected: boolean;
+  canAdd: boolean;
+  onToggle: () => void;
+  hoverVideoId: string | null;
+  onHoverChange: (id: string | null) => void;
+}) {
+  const showVideo = hoverVideoId === item.avatar_id;
+
+  return (
+    <div
+      className={`flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow ${
+        selected
+          ? "border-brand-500 ring-2 ring-brand-500/20"
+          : "border-slate-200 hover:border-slate-300"
+      }`}
+      onMouseEnter={() => onHoverChange(item.avatar_id)}
+      onMouseLeave={() => onHoverChange(null)}
+    >
+      <div className="relative aspect-[3/4] bg-slate-100">
+        {showVideo && item.preview_video_url ? (
+          <video
+            key={item.avatar_id}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+            preload="metadata"
+            src={item.preview_video_url}
+          />
+        ) : (
+          <img
+            alt=""
+            className="h-full w-full object-cover"
+            decoding="async"
+            loading="lazy"
+            src={item.preview_image_url}
+          />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-6 pt-12">
+          <p className="line-clamp-2 text-center text-[11px] font-medium text-white drop-shadow-sm">
+            {item.avatar_name}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 p-2">
+        <button
+          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+            selected
+              ? "bg-brand-600 text-white hover:bg-brand-700"
+              : canAdd
+                ? "bg-slate-100 text-primary hover:bg-slate-200"
+                : "cursor-not-allowed bg-slate-50 text-tertiary"
+          }`}
+          disabled={!selected && !canAdd}
+          title={
+            selected
+              ? "Remove from meeting avatars"
+              : canAdd
+                ? "Add to meeting avatars"
+                : `Up to ${MEETING_AVATAR_PICK_LIMIT} avatars — remove one to add another`
+          }
+          type="button"
+          onClick={onToggle}
+        >
+          <Star
+            aria-hidden
+            className={`h-3.5 w-3.5 ${selected ? "fill-current" : ""}`}
+            strokeWidth={1.75}
+          />
+          {selected ? "Selected" : "Select"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function GalleryPage() {
+  const { favorites, setFavoritesAndPersist } = useFavoriteAvatars();
+  const [catalog, setCatalog] = useState<HeyGenAvatarCatalogItem[] | null>(
+    null,
+  );
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [hoverVideoId, setHoverVideoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/avatars");
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          setLoadError(data.message || "Could not load gallery");
+
+          return;
+        }
+        setCatalog(data.avatars as HeyGenAvatarCatalogItem[]);
+      } catch {
+        setLoadError("Could not load gallery");
+      }
+    })();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!catalog) return [];
+    const q = deferredQuery.trim().toLowerCase();
+
+    if (!q) return catalog;
+
+    return catalog.filter(
+      (a) =>
+        a.avatar_name.toLowerCase().includes(q) ||
+        a.avatar_id.toLowerCase().includes(q),
+    );
+  }, [catalog, deferredQuery]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [deferredQuery]);
+
+  const slice = filtered.slice(0, visibleCount);
+  const favoriteIds = new Set(favorites.map((f) => f.id));
+
+  const catalogById = useMemo(() => {
+    const m = new Map<string, HeyGenAvatarCatalogItem>();
+
+    if (catalog) {
+      for (const a of catalog) {
+        m.set(a.avatar_id, a);
+      }
+    }
+
+    return m;
+  }, [catalog]);
+
+  return (
+    <div>
+      <PageHeader
+        subtitle="Preview avatars, hover cards for video. Choose up to five for the meeting link form."
+        title="Gallery"
+      />
+
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">Meeting avatars</p>
+            <p className="text-sm text-secondary">
+              {favorites.length} / {MEETING_AVATAR_PICK_LIMIT} selected — used
+              in{" "}
+              <Link
+                className="font-medium text-brand-600 hover:text-brand-700"
+                href="/dashboard/meetings"
+              >
+                Create meeting link
+              </Link>
+            </p>
+          </div>
+        </div>
+        {favorites.length > 0 ? (
+          <ul className="mt-4 flex flex-wrap gap-3">
+            {favorites.map((f) => {
+              const meta = catalogById.get(f.id);
+
+              return (
+                <li
+                  key={f.id}
+                  className="flex w-[100px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                >
+                  <div className="relative aspect-[3/4] bg-slate-200">
+                    {meta?.preview_image_url ? (
+                      <img
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        src={meta.preview_image_url}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[10px] text-tertiary">
+                        No preview
+                      </div>
+                    )}
+                  </div>
+                  <p className="line-clamp-2 p-1.5 text-[10px] leading-tight text-primary">
+                    {f.name}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </div>
+
+      <div className="mb-4">
+        <label className="mb-1.5 block text-[13px] font-medium text-slate-600">
+          Search
+        </label>
+        <Input
+          placeholder="Filter by name or avatar id…"
+          value={query}
+          onChange={setQuery}
+        />
+        {catalog ? (
+          <p className="mt-2 text-sm text-tertiary">
+            Showing {slice.length} of {filtered.length}
+            {deferredQuery.trim()
+              ? ` (from ${catalog.length} total)`
+              : ` avatars`}
+          </p>
+        ) : null}
+      </div>
+
+      {loadError ? (
+        <p className="text-sm text-red-600">{loadError}</p>
+      ) : !catalog ? (
+        <div className="flex justify-center py-20">
+          <Loader2
+            aria-label="Loading"
+            className="h-8 w-8 animate-spin text-slate-400"
+          />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {slice.map((item) => {
+              const selected = favoriteIds.has(item.avatar_id);
+              const canAdd =
+                selected || favorites.length < MEETING_AVATAR_PICK_LIMIT;
+
+              return (
+                <AvatarPreviewCard
+                  key={item.avatar_id}
+                  canAdd={canAdd}
+                  hoverVideoId={hoverVideoId}
+                  item={item}
+                  selected={selected}
+                  onHoverChange={setHoverVideoId}
+                  onToggle={() => {
+                    const next = toggleFavoriteAvatar(favorites, item);
+
+                    setFavoritesAndPersist(next);
+                  }}
+                />
+              );
+            })}
+          </div>
+          {visibleCount < filtered.length ? (
+            <div className="mt-8 flex justify-center">
+              <button
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-primary shadow-sm hover:bg-slate-50"
+                type="button"
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              >
+                Load more
+              </button>
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,15 +1,23 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
+import mongoose, { Schema, Model, Document } from "mongoose";
 
 export interface IConversation extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
+  guestName?: string;
+  /** Stable per-browser key for a meeting; avoids duplicate sessions / enables reconnect */
+  guestSessionKey?: string;
+  guestAccessToken?: string;
+  meetingId?: mongoose.Types.ObjectId;
   avatarId: string;
   voiceId?: string;
   language?: string;
   knowledgeBaseId: mongoose.Types.ObjectId;
   title: string;
-  status: 'active' | 'completed';
+  status: "active" | "completed";
   sessionContext?: string;
   conversationSummary?: string;
+  /** Set when summary was analyzed (OpenAI); undefined = never checked */
+  appointmentBooked?: boolean;
+  appointmentCheckedAt?: Date;
   createdAt: Date;
   lastMessageAt: Date;
 }
@@ -17,8 +25,25 @@ export interface IConversation extends Document {
 const ConversationSchema = new Schema<IConversation>({
   userId: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+    ref: "User",
+  },
+  guestName: {
+    type: String,
+    trim: true,
+  },
+  guestSessionKey: {
+    type: String,
+    trim: true,
+    maxlength: 128,
+    index: true,
+  },
+  guestAccessToken: {
+    type: String,
+    select: false,
+  },
+  meetingId: {
+    type: Schema.Types.ObjectId,
+    ref: "Meeting",
   },
   avatarId: {
     type: String,
@@ -32,7 +57,7 @@ const ConversationSchema = new Schema<IConversation>({
   },
   knowledgeBaseId: {
     type: Schema.Types.ObjectId,
-    ref: 'KnowledgeBase',
+    ref: "KnowledgeBase",
     required: true,
   },
   title: {
@@ -41,16 +66,22 @@ const ConversationSchema = new Schema<IConversation>({
   },
   status: {
     type: String,
-    enum: ['active', 'completed'],
-    default: 'active',
+    enum: ["active", "completed"],
+    default: "active",
   },
   sessionContext: {
     type: String,
-    default: '',
+    default: "",
   },
   conversationSummary: {
     type: String,
-    default: '',
+    default: "",
+  },
+  appointmentBooked: {
+    type: Boolean,
+  },
+  appointmentCheckedAt: {
+    type: Date,
   },
   createdAt: {
     type: Date,
@@ -62,5 +93,20 @@ const ConversationSchema = new Schema<IConversation>({
   },
 });
 
-export default (mongoose.models.Conversation as Model<IConversation>) || mongoose.model<IConversation>('Conversation', ConversationSchema);
+ConversationSchema.pre("validate", function (next) {
+  const hasUser = this.userId != null;
+  const hasGuest =
+    typeof this.guestName === "string" && this.guestName.trim().length > 0;
+  if (hasUser === hasGuest) {
+    next(new Error("Conversation must have either userId or guestName"));
+    return;
+  }
+  if (hasGuest && !this.guestAccessToken) {
+    next(new Error("Guest conversations require guestAccessToken"));
+    return;
+  }
+  next();
+});
 
+export default (mongoose.models.Conversation as Model<IConversation>) ||
+  mongoose.model<IConversation>("Conversation", ConversationSchema);

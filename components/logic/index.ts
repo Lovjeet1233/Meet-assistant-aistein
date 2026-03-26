@@ -7,4 +7,11 @@ export {
   StreamingAvatarSessionState,
   StreamingAvatarProvider,
   MessageSender,
+  type AvatarStreamLifecycleHandlers,
 } from "./context";
+export {
+  type InterruptMode,
+  INTERRUPT_PROFILES,
+  HEYGEN_DEFAULT_STT_CONFIDENCE,
+  mergeStartAvatarRequestWithInterruptProfile,
+} from "./interruptMode";

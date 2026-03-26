@@ -3,13 +3,29 @@ import StreamingAvatar, {
   StreamingTalkingMessageEvent,
   UserTalkingMessageEvent,
 } from "@heygen/streaming-avatar";
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+
+import {
+  type InterruptMode,
+  persistInterruptMode,
+  readStoredInterruptMode,
+} from "./interruptMode";
 
 export enum StreamingAvatarSessionState {
   INACTIVE = "inactive",
   CONNECTING = "connecting",
   CONNECTED = "connected",
 }
+
+/** Optional hooks for Meet / dashboard streaming UX (reconnect overlay, analytics). */
+export type AvatarStreamLifecycleHandlers = {
+  onStreamConnected?: () => void;
+  onStreamDisconnected?: () => void;
+};
+
+const defaultStreamLifecycleRef: React.MutableRefObject<AvatarStreamLifecycleHandlers> = {
+  current: {},
+};
 
 export enum MessageSender {
   CLIENT = "CLIENT",
@@ -61,6 +77,18 @@ type StreamingAvatarContextProps = {
 
   connectionQuality: ConnectionQuality;
   setConnectionQuality: (connectionQuality: ConnectionQuality) => void;
+
+  /** LiveKit subscriber ICE RTT sample (ms), polled while connected */
+  subscriberRttMs: number | null;
+  setSubscriberRttMs: (ms: number | null) => void;
+
+  /** Voice / interrupt sensitivity — tunes HeyGen STT confidence + UI debounce */
+  interruptMode: InterruptMode;
+  setInterruptMode: (mode: InterruptMode) => void;
+  /** False until localStorage has been read — avoids restart on hydration */
+  interruptModeReady: boolean;
+
+  streamLifecycleRef: React.MutableRefObject<AvatarStreamLifecycleHandlers>;
 };
 
 const StreamingAvatarContext = React.createContext<StreamingAvatarContextProps>(
@@ -89,6 +117,12 @@ const StreamingAvatarContext = React.createContext<StreamingAvatarContextProps>(
     setIsAvatarTalking: () => {},
     connectionQuality: ConnectionQuality.UNKNOWN,
     setConnectionQuality: () => {},
+    subscriberRttMs: null,
+    setSubscriberRttMs: () => {},
+    interruptMode: "sensitive",
+    setInterruptMode: () => {},
+    interruptModeReady: false,
+    streamLifecycleRef: defaultStreamLifecycleRef,
   },
 );
 
@@ -215,16 +249,57 @@ const useStreamingAvatarConnectionQualityState = () => {
   const [connectionQuality, setConnectionQuality] = useState(
     ConnectionQuality.UNKNOWN,
   );
+  const [subscriberRttMs, setSubscriberRttMs] = useState<number | null>(null);
 
-  return { connectionQuality, setConnectionQuality };
+  return {
+    connectionQuality,
+    setConnectionQuality,
+    subscriberRttMs,
+    setSubscriberRttMs,
+  };
+};
+
+const useInterruptModeState = (fixedInterruptMode?: InterruptMode) => {
+  const isFixed = fixedInterruptMode != null;
+  /** SSR-safe default; real value from localStorage applied in useLayoutEffect before child useEffects. */
+  const [interruptMode, setInterruptModeState] = useState<InterruptMode>(() =>
+    isFixed ? fixedInterruptMode! : "sensitive",
+  );
+  const [interruptModeReady, setInterruptModeReady] = useState(isFixed);
+
+  useLayoutEffect(() => {
+    if (isFixed) {
+      setInterruptModeState(fixedInterruptMode!);
+      setInterruptModeReady(true);
+      return;
+    }
+    setInterruptModeState(readStoredInterruptMode());
+    setInterruptModeReady(true);
+  }, [isFixed, fixedInterruptMode]);
+
+  const setInterruptMode = useCallback(
+    (mode: InterruptMode) => {
+      if (fixedInterruptMode != null) return;
+      setInterruptModeState(mode);
+      persistInterruptMode(mode);
+    },
+    [fixedInterruptMode],
+  );
+
+  return { interruptMode, setInterruptMode, interruptModeReady };
 };
 
 export const StreamingAvatarProvider = ({
   children,
   basePath,
+  streamLifecycleRef = defaultStreamLifecycleRef,
+  /** When set (e.g. public meet), interrupt mode is locked and not read from localStorage. */
+  fixedInterruptMode,
 }: {
   children: React.ReactNode;
   basePath?: string;
+  streamLifecycleRef?: React.MutableRefObject<AvatarStreamLifecycleHandlers>;
+  fixedInterruptMode?: InterruptMode;
 }) => {
   const avatarRef = React.useRef<StreamingAvatar>(null);
   const voiceChatState = useStreamingAvatarVoiceChatState();
@@ -233,6 +308,7 @@ export const StreamingAvatarProvider = ({
   const listeningState = useStreamingAvatarListeningState();
   const talkingState = useStreamingAvatarTalkingState();
   const connectionQualityState = useStreamingAvatarConnectionQualityState();
+  const interruptModeState = useInterruptModeState(fixedInterruptMode);
 
   return (
     <StreamingAvatarContext.Provider
@@ -245,6 +321,8 @@ export const StreamingAvatarProvider = ({
         ...listeningState,
         ...talkingState,
         ...connectionQualityState,
+        ...interruptModeState,
+        streamLifecycleRef,
       }}
     >
       {children}

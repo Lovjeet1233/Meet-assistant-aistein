@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -32,7 +33,7 @@ export default function LoginPage() {
       } else {
         setError(data.message || 'Invalid credentials');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -40,22 +41,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-full max-w-md px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">AI Avatar Studio</h1>
-          <p className="text-gray-600">Sign in to your account</p>
+    <div className="flex min-h-screen items-center justify-center bg-secondary px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-primary p-8 shadow-xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-primary" style={{ letterSpacing: '-0.025em' }}>
+            MeetAssistant
+          </h1>
+          <p className="mt-1 text-sm text-secondary">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-3 border-[1.5px] border-black bg-gray-50">
-              <p className="text-sm text-black">{error}</p>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
-          )}
+          ) : null}
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-black mb-2">
+            <label htmlFor="username" className="mb-1.5 block text-[13px] font-medium text-slate-600">
               Username
             </label>
             <input
@@ -63,14 +66,14 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border-[1.5px] border-gray-300 focus:border-black focus:outline-none text-black"
-              placeholder="Enter your username"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-primary outline-none placeholder:text-tertiary focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+              placeholder="Username"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
+            <label htmlFor="password" className="mb-1.5 block text-[13px] font-medium text-slate-600">
               Password
             </label>
             <input
@@ -78,8 +81,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border-[1.5px] border-gray-300 focus:border-black focus:outline-none text-black"
-              placeholder="Enter your password"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-primary outline-none placeholder:text-tertiary focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+              placeholder="Password"
               required
             />
           </div>
@@ -87,22 +90,26 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-3 font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Signing in…
+              </>
+            ) : (
+              'Sign in'
+            )}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/register" className="font-medium text-black hover:underline">
-              Register here
-            </Link>
-          </p>
-        </div>
+        <p className="mt-6 text-center text-sm text-secondary">
+          Need an account?{' '}
+          <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700">
+            Register
+          </Link>
+        </p>
       </div>
     </div>
   );
 }
-

@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface KnowledgeBase {
   id: string;
@@ -16,15 +19,11 @@ export default function KnowledgeBasesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingKb, setEditingKb] = useState<KnowledgeBase | null>(null);
 
-  useEffect(() => {
-    fetchKnowledgeBases();
-  }, []);
-
   const fetchKnowledgeBases = async () => {
     try {
       const response = await fetch('/api/knowledge-bases');
       const data = await response.json();
-      
+
       if (data.success) {
         setKnowledgeBases(data.knowledgeBases);
       }
@@ -34,6 +33,10 @@ export default function KnowledgeBasesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void fetchKnowledgeBases();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this knowledge base?')) {
@@ -46,75 +49,98 @@ export default function KnowledgeBasesPage() {
       });
 
       if (response.ok) {
-        fetchKnowledgeBases();
+        void fetchKnowledgeBases();
       }
     } catch (error) {
       console.error('Failed to delete knowledge base:', error);
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-black mb-2">Knowledge Bases</h1>
-          <p className="text-gray-600">Manage your avatar knowledge bases and system prompts</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingKb(null);
-            setShowModal(true);
-          }}
-          className="px-6 py-3 bg-black text-white font-medium hover:bg-gray-800 transition-colors"
-        >
-          + Create New
-        </button>
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" aria-label="Loading" />
       </div>
+    );
+  }
 
-      {/* Knowledge Bases Grid */}
-      {loading ? (
-        <div className="text-center py-12 text-gray-600">Loading...</div>
-      ) : knowledgeBases.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-600 mb-4">No knowledge bases yet. Create your first one!</p>
-        </div>
+  return (
+    <div>
+      <PageHeader
+        title="Knowledge bases"
+        subtitle="Manage your avatar knowledge bases and system prompts"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setEditingKb(null);
+              setShowModal(true);
+            }}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Create new
+          </button>
+        }
+      />
+
+      {knowledgeBases.length === 0 ? (
+        <EmptyState
+          icon={Plus}
+          title="No knowledge bases yet"
+          description="Add a knowledge base with a system prompt to ground your avatar."
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setEditingKb(null);
+              setShowModal(true);
+            }}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Create new
+          </button>
+        </EmptyState>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {knowledgeBases.map((kb) => (
-            <div
+            <article
               key={kb.id}
-              className="border-[1.5px] border-gray-300 p-6 hover:border-black transition-colors"
+              className="flex flex-col rounded-xl border border-slate-200 bg-primary p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
             >
-              <h3 className="text-xl font-bold text-black mb-2">{kb.name}</h3>
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">System Prompt Preview:</p>
-                <p className="text-sm text-black line-clamp-3">{kb.prompt}</p>
+              <h3 className="text-base font-semibold text-primary">{kb.name}</h3>
+              <div className="mt-3 min-h-0 flex-1">
+                <p className="text-[13px] font-medium text-slate-600">System prompt preview</p>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-tertiary">{kb.prompt}</p>
               </div>
-              <div className="flex space-x-2">
+              <footer className="mt-4 flex items-center justify-end gap-1 border-t border-slate-100 pt-4">
                 <button
+                  type="button"
                   onClick={() => {
                     setEditingKb(kb);
                     setShowModal(true);
                   }}
-                  className="flex-1 py-2 border-[1.5px] border-black text-black font-medium hover:bg-gray-100 transition-colors"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary transition-colors hover:bg-slate-100"
+                  title="Edit"
                 >
-                  Edit
+                  <Pencil className="h-4 w-4" strokeWidth={1.75} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleDelete(kb.id)}
-                  className="flex-1 py-2 bg-black text-white font-medium hover:bg-gray-800 transition-colors"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50"
+                  title="Delete"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                 </button>
-              </div>
-            </div>
+              </footer>
+            </article>
           ))}
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
+      {showModal ? (
         <KnowledgeBaseModal
           knowledgeBase={editingKb}
           onClose={() => {
@@ -124,15 +150,14 @@ export default function KnowledgeBasesPage() {
           onSuccess={() => {
             setShowModal(false);
             setEditingKb(null);
-            fetchKnowledgeBases();
+            void fetchKnowledgeBases();
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 }
 
-// Modal Component
 function KnowledgeBaseModal({
   knowledgeBase,
   onClose,
@@ -146,7 +171,7 @@ function KnowledgeBaseModal({
     name: knowledgeBase?.name || '',
     prompt: knowledgeBase?.prompt || '',
   });
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.prompt) {
@@ -154,13 +179,11 @@ function KnowledgeBaseModal({
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const url = knowledgeBase
-        ? `/api/knowledge-bases/${knowledgeBase.id}`
-        : '/api/knowledge-bases';
-      
+      const url = knowledgeBase ? `/api/knowledge-bases/${knowledgeBase.id}` : '/api/knowledge-bases';
+
       const method = knowledgeBase ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -178,70 +201,77 @@ function KnowledgeBaseModal({
       console.error('Failed to save knowledge base:', error);
       alert('An error occurred');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white border-[1.5px] border-black max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b-[1.5px] border-black flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-black">
-            {knowledgeBase ? 'Edit Knowledge Base' : 'Create Knowledge Base'}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-primary p-6 shadow-xl">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold text-primary">
+            {knowledgeBase ? 'Edit knowledge base' : 'Create knowledge base'}
           </h2>
-          <button onClick={onClose} className="text-2xl hover:text-gray-600">
-            ×
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-tertiary hover:bg-slate-100 hover:text-primary"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-black mb-2">
-              Knowledge Base Name <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-[13px] font-medium text-slate-600">
+              Knowledge base name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g., Business Advisor"
+              placeholder="e.g., Business advisor"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border-[1.5px] border-gray-300 focus:border-black focus:outline-none text-black"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-primary outline-none placeholder:text-tertiary focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-black mb-2">
-              System Prompt <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-[13px] font-medium text-slate-600">
+              System prompt <span className="text-red-600">*</span>
             </label>
             <textarea
-              placeholder="e.g., You are a helpful business advisor..."
+              placeholder="e.g., You are a helpful business advisor…"
               value={formData.prompt}
               onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
               rows={10}
-              className="w-full px-4 py-3 border-[1.5px] border-gray-300 focus:border-black focus:outline-none text-black font-mono text-sm"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm leading-relaxed text-primary outline-none placeholder:text-tertiary focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
             />
-            <p className="text-xs text-gray-600 mt-1">
-              This prompt defines the avatar's behavior. Previous conversation summaries will be automatically appended here.
+            <p className="mt-1 text-xs text-tertiary">
+              This prompt defines the avatar&apos;s behavior. Previous conversation summaries will be appended
+              automatically.
             </p>
           </div>
         </div>
 
-        <div className="p-6 border-t-[1.5px] border-black flex space-x-4">
+        <div className="mt-6 flex gap-3 border-t border-slate-100 pt-6">
           <button
+            type="button"
             onClick={onClose}
-            className="flex-1 py-3 border-[1.5px] border-black text-black font-medium hover:bg-gray-100 transition-colors"
+            className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancel
           </button>
           <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 py-3 bg-black text-white font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={saving}
+            className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
     </div>
   );
 }
-

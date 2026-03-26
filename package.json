@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@heygen/streaming-avatar": "^2.0.13",
@@ -16,14 +17,20 @@
     "ahooks": "^3.8.4",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
+    "fs": "^0.0.1-security",
+    "googleapis": "^144.0.0",
     "jsonwebtoken": "^9.0.2",
+    "livekit-client": "2.11.3",
+    "lucide-react": "^0.577.0",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.2",
+    "nanoid": "^5.1.7",
     "next": "^15.3.0",
     "openai": "^4.52.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^15.3.1",
@@ -43,6 +50,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "patch-package": "^8.0.1",
     "postcss": "8.4.38",
     "tailwindcss": "^3.4.17",
     "typescript": "5.0.4"

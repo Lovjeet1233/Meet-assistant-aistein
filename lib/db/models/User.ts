@@ -1,5 +1,12 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
+export interface IGoogleIntegration {
+  refreshToken: string;
+  accessToken?: string;
+  accessTokenExpiresAt?: Date;
+  email?: string;
+}
+
 export interface IUser extends Document {
   username: string;
   email: string;
@@ -9,7 +16,18 @@ export interface IUser extends Document {
   lastLoginAt?: Date;
   createdBy?: mongoose.Types.ObjectId;
   isActive: boolean;
+  googleIntegration?: IGoogleIntegration;
 }
+
+const GoogleIntegrationSchema = new Schema(
+  {
+    refreshToken: { type: String, required: true },
+    accessToken: String,
+    accessTokenExpiresAt: Date,
+    email: String,
+  },
+  { _id: false },
+);
 
 const UserSchema = new Schema<IUser>({
   username: {
@@ -45,6 +63,10 @@ const UserSchema = new Schema<IUser>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  googleIntegration: {
+    type: GoogleIntegrationSchema,
+    required: false,
   },
 });
 

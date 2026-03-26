@@ -29,3 +29,30 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
+const GOOGLE_OAUTH_STATE_PURPOSE = 'google_oauth' as const;
+
+export function signGoogleOAuthState(userId: string): string {
+  return jwt.sign(
+    { purpose: GOOGLE_OAUTH_STATE_PURPOSE, userId },
+    JWT_SECRET,
+    { expiresIn: '10m' },
+  );
+}
+
+export function verifyGoogleOAuthState(
+  token: string,
+): { userId: string } | null {
+  try {
+    const p = jwt.verify(token, JWT_SECRET) as {
+      purpose?: string;
+      userId?: string;
+    };
+    if (p.purpose !== GOOGLE_OAUTH_STATE_PURPOSE || !p.userId) {
+      return null;
+    }
+    return { userId: p.userId };
+  } catch {
+    return null;
+  }
+}
+

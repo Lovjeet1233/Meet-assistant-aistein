@@ -1,0 +1,46 @@
+diff --git a/node_modules/@heygen/streaming-avatar/lib/index.cjs.js b/node_modules/@heygen/streaming-avatar/lib/index.cjs.js
+index 6743204..0121401 100644
+--- a/node_modules/@heygen/streaming-avatar/lib/index.cjs.js
++++ b/node_modules/@heygen/streaming-avatar/lib/index.cjs.js
+@@ -903,8 +903,7 @@ var StreamingAvatar = /** @class */ (function () {
+                             if (track.kind === 'video' || track.kind === 'audio') {
+                                 mediaStream.addTrack(track.mediaStreamTrack);
+                                 var hasVideoTrack = mediaStream.getVideoTracks().length > 0;
+-                                var hasAudioTrack = mediaStream.getAudioTracks().length > 0;
+-                                if (hasVideoTrack && hasAudioTrack && !_this.mediaStream) {
++                                if (hasVideoTrack && !_this.mediaStream) {
+                                     _this.mediaStream = mediaStream;
+                                     _this.emit(exports.StreamingEvents.STREAM_READY, _this.mediaStream);
+                                 }
+@@ -1232,7 +1231,7 @@ var StreamingAvatar = /** @class */ (function () {
+             var websocketUrl;
+             var _this = this;
+             return __generator(this, function (_a) {
+-                websocketUrl = "wss://".concat(new URL(this.basePath).hostname, "/v1/ws/streaming.chat?session_id=").concat(this.sessionId, "&session_token=").concat(this.token).concat(this.isLiveKitTransport ? '&arch_version=v2' : '', "&silence_response=").concat(requestData.useSilencePrompt, "&push_to_talk=").concat(this.enablePushToTalk);
++                websocketUrl = "wss://".concat(new URL(this.basePath).hostname, "/v1/ws/streaming.chat?session_id=").concat(encodeURIComponent(this.sessionId), "&session_token=").concat(encodeURIComponent(this.token)).concat(this.isLiveKitTransport ? '&arch_version=v2' : '', "&silence_response=").concat(requestData.useSilencePrompt, "&push_to_talk=").concat(this.enablePushToTalk);
+                 this.webSocket = new WebSocket(websocketUrl);
+                 this.webSocket.addEventListener('message', function (event) {
+                     var eventData = null;
+diff --git a/node_modules/@heygen/streaming-avatar/lib/index.esm.js b/node_modules/@heygen/streaming-avatar/lib/index.esm.js
+index 1f8c5a8..f5cd235 100644
+--- a/node_modules/@heygen/streaming-avatar/lib/index.esm.js
++++ b/node_modules/@heygen/streaming-avatar/lib/index.esm.js
+@@ -899,8 +899,7 @@ var StreamingAvatar = /** @class */ (function () {
+                             if (track.kind === 'video' || track.kind === 'audio') {
+                                 mediaStream.addTrack(track.mediaStreamTrack);
+                                 var hasVideoTrack = mediaStream.getVideoTracks().length > 0;
+-                                var hasAudioTrack = mediaStream.getAudioTracks().length > 0;
+-                                if (hasVideoTrack && hasAudioTrack && !_this.mediaStream) {
++                                if (hasVideoTrack && !_this.mediaStream) {
+                                     _this.mediaStream = mediaStream;
+                                     _this.emit(StreamingEvents.STREAM_READY, _this.mediaStream);
+                                 }
+@@ -1228,7 +1227,7 @@ var StreamingAvatar = /** @class */ (function () {
+             var websocketUrl;
+             var _this = this;
+             return __generator(this, function (_a) {
+-                websocketUrl = "wss://".concat(new URL(this.basePath).hostname, "/v1/ws/streaming.chat?session_id=").concat(this.sessionId, "&session_token=").concat(this.token).concat(this.isLiveKitTransport ? '&arch_version=v2' : '', "&silence_response=").concat(requestData.useSilencePrompt, "&push_to_talk=").concat(this.enablePushToTalk);
++                websocketUrl = "wss://".concat(new URL(this.basePath).hostname, "/v1/ws/streaming.chat?session_id=").concat(encodeURIComponent(this.sessionId), "&session_token=").concat(encodeURIComponent(this.token)).concat(this.isLiveKitTransport ? '&arch_version=v2' : '', "&silence_response=").concat(requestData.useSilencePrompt, "&push_to_talk=").concat(this.enablePushToTalk);
+                 this.webSocket = new WebSocket(websocketUrl);
+                 this.webSocket.addEventListener('message', function (event) {
+                     var eventData = null;

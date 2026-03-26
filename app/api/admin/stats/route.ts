@@ -4,6 +4,7 @@ import User from '@/lib/db/models/User';
 import Conversation from '@/lib/db/models/Conversation';
 import Message from '@/lib/db/models/Message';
 import KnowledgeBase from '@/lib/db/models/KnowledgeBase';
+import Meeting from '@/lib/db/models/Meeting';
 import { requireAdmin } from '@/lib/auth/adminMiddleware';
 
 // GET usage statistics
@@ -12,13 +13,41 @@ export async function GET(request: NextRequest) {
     await requireAdmin(request);
     await connectDB();
     
+    const now = new Date();
+    const meetingActiveFilter = {
+      isActive: true,
+      status: { $ne: 'completed' as const },
+      $and: [
+        {
+          $or: [
+            { expiresAt: { $exists: false } },
+            { expiresAt: null },
+            { expiresAt: { $gt: now } },
+          ],
+        },
+        {
+          $or: [
+            { maxSessions: { $exists: false } },
+            { maxSessions: null },
+            { $expr: { $lt: ['$sessionCount', '$maxSessions'] } },
+          ],
+        },
+      ],
+    };
+
     // Get total counts
-    const [totalUsers, totalConversations, totalMessages, totalKnowledgeBases] = await Promise.all([
-      User.countDocuments(),
-      Conversation.countDocuments(),
-      Message.countDocuments(),
-      KnowledgeBase.countDocuments(),
-    ]);
+    const [totalUsers, totalConversations, totalMessages, totalKnowledgeBases, totalMeetings, activeMeetings, totalGuestSessions] =
+      await Promise.all([
+        User.countDocuments(),
+        Conversation.countDocuments(),
+        Message.countDocuments(),
+        KnowledgeBase.countDocuments(),
+        Meeting.countDocuments(),
+        Meeting.countDocuments(meetingActiveFilter),
+        Conversation.countDocuments({
+          guestName: { $exists: true, $nin: [null, ''] },
+        }),
+      ]);
     
     // Get active users (logged in within last 7 days)
     const sevenDaysAgo = new Date();
@@ -58,6 +87,14 @@ export async function GET(request: NextRequest) {
           totalKnowledgeBases,
           activeUsers,
           avgMessagesPerConversation,
+          totalMeetings,
+          activeMeetings,
+          totalGuestSessions,
+        },
+        meetings: {
+          totalMeetings,
+          activeMeetings,
+          totalGuestSessions,
         },
         conversations: {
           active: activeConversations,

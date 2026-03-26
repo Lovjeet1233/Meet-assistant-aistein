@@ -1,5 +1,14 @@
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 
+/**
+ * Stateless token mint: each POST forwards to HeyGen and returns a new JWT.
+ * No in-process cache or singleton token — safe for concurrent users / tabs.
+ *
+ * HeyGen `POST /v1/streaming.create_token` issues a short-lived JWT for the SDK.
+ * Per HeyGen OpenAPI, the body is effectively `{}` — there is **no** quality or
+ * resolution parameter on this endpoint. Video quality is set later on
+ * `streaming.new` via `StartAvatarRequest.quality` (low / medium / high).
+ */
 export async function POST() {
   try {
     if (!HEYGEN_API_KEY) {
@@ -11,14 +20,39 @@ export async function POST() {
       method: "POST",
       headers: {
         "x-api-key": HEYGEN_API_KEY,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({}),
     });
 
-    console.log("Response:", res);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("HeyGen create_token failed:", res.status, errText);
+      return new Response("Failed to retrieve access token", { status: res.status });
+    }
 
-    const data = await res.json();
+    const data: unknown = await res.json();
+    const token =
+      typeof data === "object" &&
+      data !== null &&
+      "data" in data &&
+      typeof (data as { data: unknown }).data === "object" &&
+      (data as { data: { token?: unknown } }).data !== null &&
+      typeof (data as { data: { token?: unknown } }).data.token === "string"
+        ? (data as { data: { token: string } }).data.token
+        : typeof data === "object" &&
+            data !== null &&
+            "token" in data &&
+            typeof (data as { token: unknown }).token === "string"
+          ? (data as { token: string }).token
+          : null;
 
-    return new Response(data.data.token, {
+    if (!token?.trim()) {
+      console.error("HeyGen create_token: missing token in body", data);
+      return new Response("Invalid token payload from HeyGen", { status: 502 });
+    }
+
+    return new Response(token.trim(), {
       status: 200,
     });
   } catch (error) {

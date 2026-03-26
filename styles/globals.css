@@ -4,7 +4,21 @@
 
 @layer base {
   body {
-    @apply bg-white text-black;
+    @apply bg-secondary text-secondary antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-primary;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-lg font-semibold text-primary;
+  }
+
+  h3 {
+    @apply text-base font-semibold text-primary;
   }
 }
 
@@ -15,7 +29,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -24,27 +38,20 @@
   }
 }
 
-li {
-  list-style-type: square;
-  margin-left: 30px;
-  padding: 2px;
-}
-
-/* Custom scrollbar styling for black and white theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #ffffff;
-  border-left: 1px solid #000000;
+  background: #f8fafc;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #000000;
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333333;
+  background: #94a3b8;
 }

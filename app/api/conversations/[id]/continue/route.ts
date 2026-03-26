@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Conversation from '@/lib/db/models/Conversation';
 import Message from '@/lib/db/models/Message';
-import KnowledgeBase from '@/lib/db/models/KnowledgeBase';
-import { requireAuth } from '@/lib/auth/middleware';
+import { findConversationWithAccess } from '@/lib/conversations/accessConversation';
 import { generateConversationSummary, createSessionContext } from '@/lib/utils/summaryGenerator';
 
 // POST endpoint to continue a conversation with enhanced context
@@ -12,23 +11,18 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = requireAuth(request);
     await connectDB();
     
     const { id } = await params;
-    
-    // Fetch conversation with knowledge base
-    const conversation = await Conversation.findOne({
-      _id: id,
-      userId: user.userId,
-    }).populate('knowledgeBaseId');
-    
-    if (!conversation) {
+
+    const access = await findConversationWithAccess(request, id);
+    if (!access) {
       return NextResponse.json(
-        { success: false, message: 'Conversation not found' },
-        { status: 404 }
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
       );
     }
+    const conversation = access.conversation;
     
     // Fetch all messages from this conversation
     const messages = await Message.find({ conversationId: id })
@@ -52,10 +46,14 @@ export async function POST(
       sessionContext = createSessionContext(knowledgeBase.prompt, conversationSummary);
     }
     
-    // Update conversation with new session context
+    // Persist without full `save()` so guest docs never fail validation when
+    // `guestAccessToken` is omitted from the in-memory document (`select: false`).
+    await Conversation.updateOne(
+      { _id: conversation._id },
+      { $set: { sessionContext, status: 'active' } },
+    );
     conversation.sessionContext = sessionContext;
     conversation.status = 'active';
-    await conversation.save();
     
     return NextResponse.json({
       success: true,

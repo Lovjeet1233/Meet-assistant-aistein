@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 // Load environment variables
 require('dotenv').config({ path: '.env.local' });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://LOVJEET:LOVJEETMONGO@cluster0.zpzj90m.mongodb.net/ai_avatar_studio';
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 const UserSchema = new mongoose.Schema({
   username: String,
